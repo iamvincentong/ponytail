@@ -34,7 +34,7 @@ test('precedence rule is stated in both', () => {
   for (const [name, src] of [['SKILL.md', skill], ['manifest', manifest]]) {
     assert.match(src, /native.*>.*stdlib.*>.*shrink/s, `${name} missing native>stdlib>shrink`);
     assert.match(src, /delete.*>.*yagni/s, `${name} missing delete>yagni`);
-    assert.match(src, /never tag (one finding|a finding) twice/i, `${name} missing no-double-tag`);
+    assert.match(src, /never tag (one finding|a finding) twice|one tag per finding/i, `${name} missing no-double-tag`);
   }
 });
 

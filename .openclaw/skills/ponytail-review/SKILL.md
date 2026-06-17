@@ -20,15 +20,26 @@ Tags:
 - `stdlib:` hand-rolled logic the language/runtime stdlib ships. Name the function.
 - `native:` a third-party dependency added solely for what a platform/builtin already does. Name the feature. Do not flag a dependency already installed and reused elsewhere (reusing an installed dep is fine, per the ladder).
 - `yagni:` abstraction with one implementation, config nobody sets, layer with one caller.
-- `shrink:` pure restructuring, same logic, fewer lines, no library swap. Show the shorter form.
+- `shrink:` pure restructuring, same logic, fewer lines, no library swap, and at least as readable. Show the shorter form. Boring over clever: never flag readable code for a denser form that only wins on line count.
 
-Precedence when more than one tag fits: `native:` > `stdlib:` > `shrink:`, and
-`delete:` > `yagni:`. Use the highest that applies; never tag one finding twice.
+Precedence when more than one tag fits, highest wins, one tag per finding:
+`delete:` > `native:` > `stdlib:` > `yagni:` > `shrink:`. (This is value-of-cut
+order — removing a thing beats swapping it beats restructuring it — and is
+deliberately distinct from the AGENTS.md generation rungs, which rank stdlib
+above native. Reviewing what exists is not the same as choosing what to write.)
 
-Mark a finding `verify:` (suffix the tag, e.g. `delete?:`, `native?:`) when you
-cannot prove the cut is safe from the diff alone, the replacement is not
-behavior-neutral, or the change touches a trust boundary. State the precondition
-the human must check before applying. See Boundaries.
+Gating: when you cannot prove the cut is safe from the diff alone, the
+replacement is not behavior-neutral, or the change touches a trust boundary,
+suffix the base tag with `?` — `delete?:`, `native?:`, `stdlib?:`, `yagni?:`,
+`shrink?:`. That suffix is the only gated form; there is no standalone `verify:`
+token, and every finding still carries exactly one base tag. State the
+precondition the human must check before applying. See Boundaries.
+
+The tags map past runtime code to SQL/IaC/config diffs: `yagni:` a speculative
+index or single-consumer view, a config knob nobody reads; `shrink:` a
+correlated subquery rewritten as a join; `delete:` a dead migration step or
+commented-out block; `native:` a hand-rolled thing the database/platform ships
+(e.g. an app-side UUID a `DEFAULT gen_random_uuid()` covers).
 
 ## Examples
 
@@ -46,6 +57,8 @@ considered whether all these validation rules are needed at this stage?"
 ✅ `L30-44: stdlib: manual loop builds dict. dict(zip(keys, values)), 1 line. (-14)`
 
 ✅ `L60-72: shrink: nested if/else ladder, same branches. Early-return guard clauses. (-4)`
+
+✅ `migrate/007.sql:L3: yagni: index on a column no query filters on yet. Drop until a slow query needs it. (-1)`
 
 ## Scoring
 
@@ -81,23 +94,29 @@ never flag them for deletion and never count them toward the net-lines metric:
 - the ONE runnable check a piece of non-trivial logic leaves behind — an
   `assert`-based self-check or one small test file (no frameworks, no fixtures);
 - `ponytail:` comments that name an intentional simplification's ceiling and
-  upgrade path.
+  upgrade path;
+- framework-required structure that only looks redundant: effect dependency
+  arrays, list keys, explicit prop/type declarations, memoization seams. Route
+  any such cut through the `?` suffix, never a flat `delete:`/`shrink:`.
 
 A finding that would cut any of the above is out of scope here — route it to the
 normal pass, do not emit it as a `delete:`/`shrink:` line.
 
 Unsafe-cut rule: a cut is only this pass's business when its replacement is
-behavior-neutral. Use `verify:` (not a plain directive) whenever you cannot prove
-that from the diff:
+behavior-neutral. Add the `?` suffix (not a flat directive) whenever you cannot
+prove that from the diff:
 
 - the call's idempotency, dead-ness, or single-caller status depends on code
-  outside the diff (reflection, DI, dynamic dispatch, a second impl elsewhere);
+  outside the diff (reflection, DI, dynamic dispatch, a second impl elsewhere).
+  "From the diff" means the WHOLE diff, every file in it — a single-caller or
+  dead-code claim must be checked across all diffed files, not just the
+  finding's own file; suffix `?` if any other diffed file was not inspected;
 - a `native:`/`stdlib:` swap can shift observable output (locale, timezone,
   format, validation strictness) or runtime support;
 - the abstraction is a test-substitution seam, a trust/IO boundary, or a
   published API contract.
 
-When unsure, `verify:` — never assert a cut is free. Listing a replacement is a
+When unsure, add `?` — never assert a cut is free. Listing a replacement is a
 direction to consider, not validated code to paste; flag any replacement whose
 correctness depends on surrounding scope.
 
