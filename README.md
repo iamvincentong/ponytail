@@ -20,7 +20,7 @@
 
 <p align="center">
   <strong>80-94% less code &middot; 3-6&times; faster &middot; 42-75% cheaper</strong><br>
-  <sub>Per-task code, latency, and cost on the Claude API, not your plan's quota. The ruleset re-injects each turn, so on one short prompt that overhead can outweigh the savings. Median of 10 runs across Haiku, Sonnet, and Opus. <a href="benchmarks/">Reproduce it yourself.</a></sub>
+  <sub>Per-task code, latency, and cost on the Claude API, not your plan's quota. Median of 10 runs across Haiku, Sonnet, and Opus. Results vary by model and prompt: the ruleset re-injects each turn, so on a short prompt or a terse reasoning model that overhead can outweigh the savings. <a href="benchmarks/">Reproduce it yourself.</a></sub>
 </p>
 
 ---
@@ -51,6 +51,8 @@ Five everyday tasks (email validator, debounce, CSV sum, countdown timer, rate l
 </p>
 
 **80-94% less code, 42-75% less cost, and 3-6× faster than a no-skill agent, on every Claude model.** Every shortcut ponytail takes is marked in the code with a `ponytail:` comment naming its upgrade path. Reproduce it yourself: `npx promptfoo eval -c benchmarks/promptfooconfig.yaml`. Method and raw numbers: [benchmarks/](benchmarks/). Production-grade tasks, where an unconstrained agent bloats far more, are written up in [benchmarks/results/](benchmarks/results/).
+
+**That is the byproduct, not the pitch.** These are Claude numbers, and they vary by model. Capable instruction-following models follow the ladder and write far less, cheaper and faster; terse reasoning models can go the other way, on GPT-5.5 the always-on ruleset costs more than it saves. The rule was never "fewest tokens." It is: write only what the task needs, and never cut validation, error handling, security, or accessibility. The code ends up small because it is necessary, not golfed, and that is the part that stays maintainable. Lower cost and latency are a side effect on the models that follow it.
 
 ## How it works
 
