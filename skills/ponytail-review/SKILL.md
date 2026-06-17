@@ -15,9 +15,9 @@ to cut, what replaces it. The diff's best outcome is getting shorter.
 
 ## Format
 
-`L<line>: <tag> <what>. <replacement>. (<signed line delta>)`, or
-`<file>:L<line>: ...` for multi-file diffs. Every finding ends with its net
-signed line delta (see Scoring); add `, -<n> dep` when a dependency goes too.
+`L<line>: <tag> <what>. <replacement>.`, or `<file>:L<line>: ...` for
+multi-file diffs. End a finding with a rough line estimate when it helps the
+reader weigh it (`~-12`, `-1 dep`); exact counts are not required.
 
 Tags:
 
@@ -53,36 +53,30 @@ considered whether all these validation rules are needed at this stage?"
 
 ✅ `L12-38: 27-line validator at a trust boundary — not flagged. Input validation is a never-flag carve-out (see Boundaries), not bloat. (Internal-only, with a downstream confirmation step? then stdlib?: a one-line check is enough.)`
 
-✅ `L4: native?: moment.js imported for one format call. Intl.DateTimeFormat, 0 deps — verify locale/timezone output matches before swapping. (-1 line, -1 dep)`
+✅ `L4: native?: moment.js imported for one format call. Intl.DateTimeFormat — verify locale/timezone output matches before swapping. ~-1 line, -1 dep`
 
-✅ `repo.py:L88: yagni?: AbstractRepository with one implementation. Inline it — verify no second impl/caller exists repo-wide and it is not a test seam first. (-14)`
+✅ `repo.py:L88: yagni?: AbstractRepository with one implementation. Inline it — verify no second impl/caller exists repo-wide and it is not a test seam first. ~-14`
 
-✅ `L52-71: delete?: retry wrapper around a seemingly-idempotent call. Cut only if the call is confirmed idempotent AND no data-loss-on-failure path depends on the retry; verify before removing. (-20)`
+✅ `L52-71: delete?: retry wrapper around a seemingly-idempotent call. Cut only if the call is confirmed idempotent AND no data-loss-on-failure path depends on the retry. ~-20`
 
-✅ `L30-44: stdlib: manual loop builds dict. dict(zip(keys, values)), 1 line. (-14)`
+✅ `L30-44: stdlib: manual loop builds dict. dict(zip(keys, values)), 1 line. ~-14`
 
-✅ `L60-72: shrink: nested if/else ladder, same branches. Early-return guard clauses. (-4)`
+✅ `L60-72: shrink: nested if/else ladder, same branches. Early-return guard clauses. ~-4`
 
-✅ `migrate/007.sql:L3: yagni: index on a column no query filters on yet. Drop until a slow query needs it. (-1)`
+✅ `migrate/007.sql:L3: yagni: index on a column no query filters on yet. Drop until a slow query needs it. ~-1`
 
 ## Scoring
 
-Every finding ends with its own signed line delta in parens — `(-12)` for a
-deletion, `(-4)` for a swap that removes 6 and adds 2, `(0)` for a structural
-cut that nets no lines. A swap's delta is net (lines removed minus replacement
-lines added), never gross. `verify:`-gated findings carry a delta too, but it is
-counted separately below.
+End with one rough verdict — the headline is how much the diff can shrink and
+how many `?`-gated findings still need a human check before they count:
 
-End with one verdict line summing those deltas:
+`net: ~-<N> lines, -<M> deps possible — <J> ?-gated, confirm before cutting.`
 
-- `net: -<N> lines, -<M> deps possible (proven); -<K> more lines if <J> verify: checks pass.`
-- when proven cuts net zero lines but still remove complexity/deps:
-  `net: 0 lines, -<M> deps / <J> verify: checks to confirm.`
-- when there is nothing to cut at all: `Lean already.` and stop.
-
-Carve-out code (Boundaries) is never counted in any of these totals. This is a
-complexity-only verdict, not a release-go; correctness, security, and
-performance still owe a separate pass.
+Estimate `<N>`; do not compute exact per-finding line math. `<J>` is the count
+of `?`-gated findings (drop the clause when none). When there is nothing to cut,
+say `Lean already.` and stop. Carve-out code (Boundaries) never counts toward
+the estimate. This is a complexity-only verdict, not a release-go; correctness,
+security, and performance still owe a separate pass.
 
 ## Boundaries
 

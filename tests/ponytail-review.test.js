@@ -88,13 +88,19 @@ test('every carve-out is never-flagged in the manifest', () => {
 
 // --- scoring parity (the trustworthy-scalar cluster) ---
 
-test('net scalar counts deps and separates proven from verify:-gated, in both', () => {
+test('net verdict is a rough estimate, counts deps, and flags ?-gated, in both', () => {
   for (const [name, src] of [['SKILL.md', skill], ['manifest', manifest]]) {
-    assert.match(src, /-.?<?M>?\s*deps|-<M> deps|M deps/i, `${name} net scalar omits deps`);
-    assert.match(src, /proven/i, `${name} does not separate proven cuts`);
-    assert.match(src, /verify:? checks/i, `${name} does not separate verify-gated cuts`);
-    assert.match(src, /signed.*delta|delta/i, `${name} missing per-finding line delta rule`);
+    assert.match(src, /deps/i, `${name} net verdict omits deps`);
+    assert.match(src, /~-|rough|estimate/i, `${name} net verdict is not a rough estimate`);
+    assert.match(src, /\?-gated|gated/i, `${name} does not flag ?-gated findings in the verdict`);
   }
+});
+
+test('the abolished verify: token does not reappear as a tally in Scoring', () => {
+  // F1 regression guard: Format declares no standalone verify: token; Scoring
+  // must not ask the reviewer to count "verify: checks".
+  assert.ok(!/verify:?\s*checks/i.test(skill), 'SKILL.md still tallies "verify: checks"');
+  assert.ok(!/verify:?\s*checks/i.test(manifest), 'manifest still tallies "verify: checks"');
 });
 
 test('"Ship." is gone from both (complexity pass issues no release-go)', () => {
